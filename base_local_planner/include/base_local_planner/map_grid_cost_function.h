@@ -49,6 +49,7 @@ namespace base_local_planner {
  * when scoring a trajectory according to the values in mapgrid, we can take
  *return the value of the last point (if no of the earlier points were in
  * return collision), the sum for all points, or the product of all (non-zero) points
+ * 轨迹代价的聚合方式（最后一个点/所有点加和/所有点相乘）
  */
 enum CostAggregationType { Last, Sum, Product};
 
@@ -64,12 +65,14 @@ enum CostAggregationType { Last, Sum, Product};
  *
  * This can be used to favor trajectories which stay on a given path, or which
  * approach a given goal.
- * @param costmap_ros Reference to object giving updates of obstacles around robot
+ * @param costmap_ros Reference to object giving updates of obstacles around robot 局部地图
+ * 轨迹采样点在局部坐标系上的平移,即相对于机器人中心的位置：xshift、yshift
  * @param xshift where the scoring point is with respect to robot center pose
  * @param yshift where the scoring point is with respect to robot center pose
  * @param is_local_goal_function, scores for local goal rather than whole path
  * @param aggregationType how to combine costs along trajectory
  */
+// 局部地图代价函数
 class MapGridCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
   MapGridCostFunction(costmap_2d::Costmap2D* costmap,
@@ -122,7 +125,7 @@ private:
   std::vector<geometry_msgs::PoseStamped> target_poses_;
   costmap_2d::Costmap2D* costmap_;
 
-  base_local_planner::MapGrid map_;
+  base_local_planner::MapGrid map_;  // 传入进去的是局部地图
   CostAggregationType aggregationType_;
   /// xshift and yshift allow scoring for different
   // ooints of robots than center, like fron or back

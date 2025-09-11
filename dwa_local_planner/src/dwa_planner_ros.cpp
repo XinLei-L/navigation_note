@@ -102,10 +102,10 @@ namespace dwa_local_planner {
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
       tf_ = tf;
-      costmap_ros_ = costmap_ros; // 局部地图获取
-      costmap_ros_->getRobotPose(current_pose_);
+      costmap_ros_ = costmap_ros; // 地图管理器 + 数据更新服务员（随时收集障碍物信息、更新地图）
+      costmap_ros_->getRobotPose(current_pose_); // 获取机器人当前位置
 
-      // make sure to update the costmap we'll use for this cycle
+      // 获取局部地图
       costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
 			// 初始化planner_util_, 是一个工具类，帮助坐标转化、全局路径跟踪等任务
       planner_util_.initialize(tf, costmap, costmap_ros_->getGlobalFrameID());
@@ -258,7 +258,6 @@ namespace dwa_local_planner {
   }
   // 计算局部速度命令
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
-    // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
     if ( ! costmap_ros_->getRobotPose(current_pose_)) {
       ROS_ERROR("Could not get robot pose");
       return false;
@@ -276,8 +275,7 @@ namespace dwa_local_planner {
     }
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
 
-    // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
-		// 更新 DWA 的路径和局部代价信息
+		// 更新DWA的路径和局部代价信息
     dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan, costmap_ros_->getRobotFootprint());
 
     if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_)) {

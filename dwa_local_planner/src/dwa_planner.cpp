@@ -131,12 +131,9 @@ namespace dwa_local_planner {
     goal_front_costs_.setStopOnFailure( false );
     alignment_costs_.setStopOnFailure( false );
 
-    //Assuming this planner is being run within the navigation stack, we can
-    //just do an upward search for the frequency at which its being run. This
-    //also allows the frequency to be overwritten locally.
     std::string controller_frequency_param_name;
     if(!private_nh.searchParam("controller_frequency", controller_frequency_param_name)) {
-      sim_period_ = 0.05;  // 仿真周期，通过 controller_frequency 参数推算，决定一次 DWA 采样的时长
+      sim_period_ = 0.05;  // 仿真周期，通过controller_frequency参数推算，决定一次DWA采样的时长
     } else {
       double controller_frequency = 0;
       private_nh.param(controller_frequency_param_name, controller_frequency, 20.0);
@@ -187,17 +184,16 @@ namespace dwa_local_planner {
     private_nh.param("cheat_factor", cheat_factor_, 1.0);
   }
 
-  // used for visualization only, total_costs are not really total costs
 	// 给定某个网格，返回其路径代价、目标代价、障碍代价和总和
 	// RViz 可以显示这个代价云，用来调试参数
   bool DWAPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
     path_cost = path_costs_.getCellCosts(cx, cy);
     goal_cost = goal_costs_.getCellCosts(cx, cy);
     occ_cost = planner_util_->getCostmap()->getCost(cx, cy);
-    if (path_cost == path_costs_.obstacleCosts() ||
-        path_cost == path_costs_.unreachableCellCosts() ||
+    if (path_cost == path_costs_.obstacleCosts() ||  // 路径点为障碍物点
+        path_cost == path_costs_.unreachableCellCosts() ||  // 路径点在局部地图之外
         occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-      return false;
+      return false;  // 无效点，返回的false会判定这条局部采样路径是无效的
     }
 
     total_cost =
@@ -206,7 +202,8 @@ namespace dwa_local_planner {
         occdist_scale_ * occ_cost;
     return true;
   }
-	// 设置新的全局路径，并重置震荡检测器
+	
+  // 设置新的全局路径，并重置震荡检测器
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     oscillation_costs_.resetOscillationFlags();
     return planner_util_->setPlan(orig_global_plan);
@@ -238,7 +235,8 @@ namespace dwa_local_planner {
 
     return false;
   }
-	// 更新当前全局路径，并刷新代价函数的目标
+	
+  // 更新当前全局路径，并对代价函数的设置进行更新
   void DWAPlanner::updatePlanAndLocalCosts(
       const geometry_msgs::PoseStamped& global_pose,
       const std::vector<geometry_msgs::PoseStamped>& new_plan,
@@ -250,7 +248,7 @@ namespace dwa_local_planner {
 
     obstacle_costs_.setFootprint(footprint_spec);
 
-    // costs for going away from path
+    // 设置目标路径：局部目标路径
     path_costs_.setTargetPoses(global_plan_);
 
     // costs for not going towards the local goal as much as possible

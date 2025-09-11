@@ -207,6 +207,7 @@ namespace base_local_planner{
   }
 
   //mark the point of the costmap as local goal where global_plan first leaves the area (or its last point)
+  // 计算的时候，传入的是一个点(是局部地图的边界点)，然后计算这个点到局部地图内所有点的距离
   void MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
       const std::vector<geometry_msgs::PoseStamped>& global_plan) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
@@ -250,8 +251,6 @@ namespace base_local_planner{
     computeTargetDistance(path_dist_queue, costmap);
   }
 
-
-
   void MapGrid::computeTargetDistance(queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap){
     MapCell* current_cell;
     MapCell* check_cell;
@@ -259,7 +258,6 @@ namespace base_local_planner{
     unsigned int last_row = size_y_ - 1;
     while(!dist_queue.empty()){
       current_cell = dist_queue.front();
-
 
       dist_queue.pop();
 

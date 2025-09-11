@@ -52,26 +52,31 @@ MapGridCostFunction::MapGridCostFunction(costmap_2d::Costmap2D* costmap,
     is_local_goal_function_(is_local_goal_function),
     stop_on_failure_(true) {}
 
+// 存储目标点，全局路径的局部截取点，或者最终目标
 void MapGridCostFunction::setTargetPoses(std::vector<geometry_msgs::PoseStamped> target_poses) {
   target_poses_ = target_poses;
 }
 
+// 预处理
 bool MapGridCostFunction::prepare() {
-  map_.resetPathDist();
+  map_.resetPathDist(); // 重置网格(map_中的每个栅格会存储到目标点的距离，重置距离为在map_之外)
 
+  // 得到每个格子到最近目标的距离
   if (is_local_goal_function_) {
-    map_.setLocalGoal(*costmap_, target_poses_);
+    map_.setLocalGoal(*costmap_, target_poses_); // 将目标点设置为局部目标点
   } else {
-    map_.setTargetCells(*costmap_, target_poses_);
+    map_.setTargetCells(*costmap_, target_poses_); // 把目标点作为全局参考
   }
   return true;
 }
 
+// 得到某个栅格距离目标点的代价
 double MapGridCostFunction::getCellCosts(unsigned int px, unsigned int py) {
   double grid_dist = map_(px, py).target_dist;
   return grid_dist;
 }
 
+// 
 double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0.0;
   if (aggregationType_ == Product) {
@@ -95,9 +100,7 @@ double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
       py = py + yshift_ * sin(pth + M_PI_2);
     }
 
-    //we won't allow trajectories that go off the map... shouldn't happen that often anyways
     if ( ! costmap_->worldToMap(px, py, cell_x, cell_y)) {
-      //we're off the map
       ROS_WARN("Off Map %f, %f", px, py);
       return -4.0;
     }
