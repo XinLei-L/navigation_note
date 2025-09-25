@@ -73,6 +73,7 @@ namespace base_local_planner {
        *            -2 if footprint covers at least a no-information cell, or
        *            -3 if footprint is [partially] outside of the map
        */
+      // 对车辆轮廓的每条边都取line_cost，最后以其中最大值作为footprint_cost。其中还会判断每条边上的点是否有问题，有问题直接返回负值
       virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius);
 
@@ -84,6 +85,7 @@ namespace base_local_planner {
        * @param y1 The y position of the second cell in grid coordinates
        * @return A positive cost for a legal line... negative otherwise
        */
+      // 计算两点连线的代价值：如果其中有一个迭代点为负值，则直接返回负值；如果没有，则取迭代点中最小的代价作为两点连线的代价值
       double lineCost(int x0, int x1, int y0, int y1) const;
 
       /**
@@ -92,6 +94,7 @@ namespace base_local_planner {
        * @param y The y position of the point in cell coordinates
        * @return A positive cost for a legal point... negative otherwise
        */
+      // 得到栅格值
       double pointCost(int x, int y) const;
 
     private:

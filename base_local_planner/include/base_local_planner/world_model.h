@@ -62,14 +62,16 @@ namespace base_local_planner {
        *          -2 if footprint covers at least a no-information cell, or
        *          -3 if footprint is partially or totally outside of the map
        */
+      // 对
       virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius) = 0;
-
+      // 计算当前朝向车辆的内切圆半径与外接圆半径，再计算足迹代价
       double footprintCost(double x, double y, double theta, const std::vector<geometry_msgs::Point>& footprint_spec, double inscribed_radius = 0.0, double circumscribed_radius=0.0){
 
         double cos_th = cos(theta);
         double sin_th = sin(theta);
         std::vector<geometry_msgs::Point> oriented_footprint;
+        // 根据机器人的坐标和朝向，计算机器人的轮廓点
         for(unsigned int i = 0; i < footprint_spec.size(); ++i){
           geometry_msgs::Point new_pt;
           new_pt.x = x + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
@@ -82,9 +84,9 @@ namespace base_local_planner {
         robot_position.y = y;
 
         if(inscribed_radius==0.0){
+          // 根据footprint计算内切圆和外接圆半径
           costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius, circumscribed_radius);
         }
-
         return footprintCost(robot_position, oriented_footprint, inscribed_radius, circumscribed_radius);
       }
 

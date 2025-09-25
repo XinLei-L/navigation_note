@@ -39,9 +39,13 @@
 /** Provides a mapping for often used cost values */
 namespace costmap_2d
 {
+// 未知区域或无信息区域 255
 static const unsigned char NO_INFORMATION = 255;
+// 致命障碍物(障碍物本体) 254
 static const unsigned char LETHAL_OBSTACLE = 254;
+// 内切膨胀障碍物(障碍物膨胀区) 253
 static const unsigned char INSCRIBED_INFLATED_OBSTACLE = 253;
+// 空闲栅格 0
 static const unsigned char FREE_SPACE = 0;
 }
 #endif  // COSTMAP_2D_COST_VALUES_H_

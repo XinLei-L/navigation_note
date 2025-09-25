@@ -59,20 +59,19 @@ class LocalPlannerUtil {
 private:
   // things we get from move_base
   std::string name_;
-  std::string global_frame_;
+  std::string global_frame_;  // 全局坐标系
 
-  costmap_2d::Costmap2D* costmap_;
-  tf2_ros::Buffer* tf_;
+  costmap_2d::Costmap2D* costmap_;  // 局部代价地图
+  tf2_ros::Buffer* tf_; // 用于坐标变换
+
+  std::vector<geometry_msgs::PoseStamped> global_plan_;  // 当前全局路径
 
 
-  std::vector<geometry_msgs::PoseStamped> global_plan_;
-
-
-  boost::mutex limits_configuration_mutex_;
-  bool setup_;
-  LocalPlannerLimits default_limits_;
-  LocalPlannerLimits limits_;
-  bool initialized_;
+  boost::mutex limits_configuration_mutex_;  // 约束配置互斥锁
+  bool setup_;  // 是否设置过局部规划器约束
+  LocalPlannerLimits default_limits_; // 默认局部规划器约束
+  LocalPlannerLimits limits_;  // 当前局部规划器约束
+  bool initialized_; // 是否初始化
 
 public:
 
@@ -85,26 +84,23 @@ public:
 
   ~LocalPlannerUtil() {
   }
-
+  // 初始化局部规划器工具
   void initialize(tf2_ros::Buffer* tf,
       costmap_2d::Costmap2D* costmap,
       std::string global_frame);
-
+  // 获取全局路径中的最后一个点作为目标点
   bool getGoal(geometry_msgs::PoseStamped& goal_pose);
-
+  // 设置新的全局路径
   bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
-
+  // 获取局部路径：将全局路径转换到机器人坐标系，并裁剪一部分作为局部路径
   bool getLocalPlan(const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan);
-
+  // 获取局部代价地图
   costmap_2d::Costmap2D* getCostmap();
-
+  // 获取当前局部规划器约束
   LocalPlannerLimits getCurrentLimits();
-
+  // 获取全局坐标系
   std::string getGlobalFrame(){ return global_frame_; }
 };
-
-
-
 
 };
 

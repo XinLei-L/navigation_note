@@ -75,6 +75,7 @@ namespace base_local_planner {
     double footprint_cost = 0.0;
 
     //we need to rasterize each line in the footprint
+    // 对车辆每条边都计算line_cost，
     for(unsigned int i = 0; i < footprint.size() - 1; ++i){
       //get the cell coord of the first point
       if(!costmap_.worldToMap(footprint[i].x, footprint[i].y, x0, y0))
@@ -112,14 +113,13 @@ namespace base_local_planner {
 
   }
 
-  //calculate the cost of a ray-traced line
   double CostmapModel::lineCost(int x0, int x1, int y0, int y1) const {
     double line_cost = 0.0;
     double point_cost = -1.0;
 
     for( LineIterator line( x0, y0, x1, y1 ); line.isValid(); line.advance() )
     {
-      point_cost = pointCost( line.getX(), line.getY() ); //Score the current point
+      point_cost = pointCost( line.getX(), line.getY() ); // 获取迭代点的代价值
 
       if(point_cost < 0)
         return point_cost;
@@ -130,7 +130,7 @@ namespace base_local_planner {
 
     return line_cost;
   }
-
+  
   double CostmapModel::pointCost(int x, int y) const {
     unsigned char cost = costmap_.getCost(x, y);
     //if the cell is in an obstacle the path is invalid

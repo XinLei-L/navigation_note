@@ -57,15 +57,19 @@ public:
   ~ObstacleCostFunction();
 
   bool prepare();
+  // 计算轨迹的得分
   double scoreTrajectory(Trajectory &traj);
-
+  // 设置是否对代价值求和，默认取最大值
   void setSumScores(bool score_sums){ sum_scores_=score_sums; }
-
+  // 设置参数：最大线速度、最大缩放因子、缩放速度阈值
   void setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed);
+  // 设置机器人轮廓
   void setFootprint(std::vector<geometry_msgs::Point> footprint_spec);
 
   // helper functions, made static for easy unit testing
+  // 获取缩放因子: 速度越大，缩放因子越大。达到让机器人在高速时要么减速要么离墙壁更远的效果
   static double getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor);
+  // 计算机器人轮廓在路径点处的代价
   static double footprintCost(
       const double& x,
       const double& y,
@@ -76,13 +80,13 @@ public:
       base_local_planner::WorldModel* world_model);
 
 private:
-  costmap_2d::Costmap2D* costmap_;
-  std::vector<geometry_msgs::Point> footprint_spec_;
-  base_local_planner::WorldModel* world_model_;
-  double max_trans_vel_;
-  bool sum_scores_;
+  costmap_2d::Costmap2D* costmap_;  // 局部代价地图
+  std::vector<geometry_msgs::Point> footprint_spec_; // 机器人轮廓点
+  base_local_planner::WorldModel* world_model_; // 基于costmap的世界模型
+  double max_trans_vel_;  // 最大线速度
+  bool sum_scores_;  // 是否对代价值求和，默认为false，则取最大值
   //footprint scaling with velocity;
-  double max_scaling_factor_, scaling_speed_;
+  double max_scaling_factor_, scaling_speed_;  // 最大缩放因子、缩放速度阈值
 };
 
 } /* namespace base_local_planner */

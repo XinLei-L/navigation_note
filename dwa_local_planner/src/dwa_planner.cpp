@@ -192,7 +192,7 @@ namespace dwa_local_planner {
     occ_cost = planner_util_->getCostmap()->getCost(cx, cy);
     if (path_cost == path_costs_.obstacleCosts() ||  // 路径点为障碍物点
         path_cost == path_costs_.unreachableCellCosts() ||  // 路径点在局部地图之外
-        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {  // 栅格代价大于等于253，表示该点为障碍物
       return false;  // 无效点，返回的false会判定这条局部采样路径是无效的
     }
 
