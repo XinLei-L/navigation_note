@@ -203,7 +203,7 @@ namespace dwa_local_planner {
     return true;
   }
 	
-  // 设置新的全局路径，并重置震荡检测器
+  // 设置新的全局路径，并重置震荡检测器(重置震荡代价函数中的标志位)
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     oscillation_costs_.resetOscillationFlags();
     return planner_util_->setPlan(orig_global_plan);

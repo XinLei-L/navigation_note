@@ -54,14 +54,15 @@ void OscillationCostFunction::setOscillationResetDist(double dist, double angle)
 }
 
 void OscillationCostFunction::updateOscillationFlags(Eigen::Vector3f pos, base_local_planner::Trajectory* traj, double min_vel_trans) {
-  if (traj->cost_ >= 0) {
+  if (traj->cost_ >= 0) {  // 有效轨迹
     if (setOscillationFlags(traj, min_vel_trans)) {
-      prev_stationary_pos_ = pos;
+      prev_stationary_pos_ = pos;  // 记录当前位置作为上次设置震荡标志位的位置
     }
-    //if we've got restrictions... check if we can reset any oscillation flags
+    // 检查是否存在运动限制
     if(forward_pos_only_ || forward_neg_only_
         || strafe_pos_only_ || strafe_neg_only_
         || rot_pos_only_ || rot_neg_only_){
+      // 如果满足重置条件，就重置震荡标志位
       resetOscillationFlagsIfPossible(pos, prev_stationary_pos_);
     }
   }
@@ -74,7 +75,7 @@ void OscillationCostFunction::resetOscillationFlagsIfPossible(const Eigen::Vecto
 
   double th_diff = pos[2] - prev[2];
 
-  //if we've moved far enough... we can reset our flags
+  // 检查是否可以重置
   if (sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_ ||
       fabs(th_diff) > oscillation_reset_angle_) {
     resetOscillationFlags();
@@ -99,15 +100,15 @@ void OscillationCostFunction::resetOscillationFlags() {
 }
 
 bool OscillationCostFunction::setOscillationFlags(base_local_planner::Trajectory* t, double min_vel_trans) {
-  bool flag_set = false;
+  bool flag_set = false;  // 标记是否设置了新的限制标志
   //set oscillation flags for moving forward and backward
-  if (t->xv_ < 0.0) {
-    if (forward_pos_) {
-      forward_neg_only_ = true;
-      flag_set = true;
+  if (t->xv_ < 0.0) { // 如果轨迹是向后移动
+    if (forward_pos_) { // 之前记录过向前移动
+      forward_neg_only_ = true; // 那么现在设置只能朝后移动
+      flag_set = true; // 标记设置了新的限制
     }
-    forward_pos_ = false;
-    forward_neg_ = true;
+    forward_pos_ = false; // 清除向前移动状态
+    forward_neg_ = true; // 设置当前为向后移动状态
   }
   if (t->xv_ > 0.0) {
     if (forward_neg_) {
@@ -119,6 +120,7 @@ bool OscillationCostFunction::setOscillationFlags(base_local_planner::Trajectory
   }
 
   //we'll only set flags for strafing and rotating when we're not moving forward at all
+  // 只有当平移速度很小时才检测侧移和旋转震荡（避免高速时的误检查）
   if (fabs(t->xv_) <= min_vel_trans) {
     //check negative strafe
     if (t->yv_ < 0) {
