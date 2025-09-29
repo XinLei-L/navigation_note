@@ -54,7 +54,7 @@ public:
 
   TwirlingCostFunction() {}
   ~TwirlingCostFunction() {}
-
+  // 返回角速度的绝对值
   double scoreTrajectory(Trajectory &traj);
 
   bool prepare() {return true;};

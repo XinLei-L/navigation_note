@@ -47,6 +47,9 @@ namespace base_local_planner {
    */
   class VelocityIterator {
     public:
+      /**
+       * @brief 速度迭代器：根据最小最大速度以及采样数量，生成采样速度列表
+       */
       VelocityIterator(double min, double max, int num_samples):
         current_index(0)
       {
@@ -73,27 +76,27 @@ namespace base_local_planner {
           samples_.push_back(max);
         }
       }
-
+      // 获取当前索引的速度
       double getVelocity(){
         return samples_.at(current_index);
       }
-
+      // 迭代器中当前索引+1
       VelocityIterator& operator++(int){
         current_index++;
         return *this;
       }
-
+      // 当前索引重置为0
       void reset(){
         current_index = 0;
       }
-
+      // 当前索引是否大于采样速度列表的size
       bool isFinished(){
         return current_index >= samples_.size();
       }
 
     private:
-      std::vector<double> samples_;
-      unsigned int current_index;
+      std::vector<double> samples_; // 采样速度列表
+      unsigned int current_index; // 当前索引
   };
 };
 #endif

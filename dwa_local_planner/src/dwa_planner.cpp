@@ -53,7 +53,7 @@ namespace dwa_local_planner {
   void DWAPlanner::reconfigure(DWAPlannerConfig &config)
   {
     boost::mutex::scoped_lock l(configuration_mutex_);
-		// 控制轨迹模拟时长、分辨率、是否使用 DWA
+		// 仿真总时长、平移速度方向仿真步长、角度仿真步长、是否使用 DWA、仿真周期
     generator_.setParameters(
         config.sim_time,
         config.sim_granularity,

@@ -71,6 +71,7 @@ public:
    * passing max_samples = -1 (default): Each Sampling planner will continue to call
    * generator until generator runs out of samples (or forever if that never happens)
    */
+  // 带参构造函数，传入参数：轨迹生成器列表、代价函数计算列表、最大采样数
   SimpleScoredSamplingPlanner(std::vector<TrajectorySampleGenerator*> gen_list, std::vector<TrajectoryCostFunction*>& critics, int max_samples = -1);
 
   /**
@@ -78,6 +79,11 @@ public:
    * of positive costs, aborting as soon as a negative cost are found or costs greater
    * than positive best_traj_cost accumulated
    */
+  /**
+   * @brief 评估轨迹成本函数，对轨迹计算得分：对代价函数列表迭代计算代价
+   * @param traj 轨迹
+   * @param best_traj_cost 最优轨迹代价
+  */
   double scoreTrajectory(Trajectory& traj, double best_traj_cost);
 
   /**
@@ -91,18 +97,20 @@ public:
    * @param traj The container to write the result to
    * @param all_explored pass NULL or a container to collect all trajectories for debugging (has a penalty)
    */
+  /**
+   * @brief 寻找最优轨迹
+   * @param traj 存储最佳轨迹(包含线速度、角速度、代价、轨迹点)
+   * @param all_explored 存储所有的采样轨迹，不包含null代价的
+   */
   bool findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored = 0);
 
 
 private:
-  std::vector<TrajectorySampleGenerator*> gen_list_;
-  std::vector<TrajectoryCostFunction*> critics_;
+  std::vector<TrajectorySampleGenerator*> gen_list_;  // 轨迹生成器指针队列
+  std::vector<TrajectoryCostFunction*> critics_; // 轨迹代价函数指针队列
 
-  int max_samples_;
+  int max_samples_;  // 最大采样数
 };
-
-
-
 
 } // namespace
 

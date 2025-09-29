@@ -40,6 +40,7 @@
 
 namespace base_local_planner
 {
+// 局部规划期的约束配置类
 class LocalPlannerLimits
 {
 public:
@@ -50,18 +51,18 @@ public:
   double min_vel_x;
   double max_vel_y;
   double min_vel_y;
-  double max_vel_theta;
+  double max_vel_theta; // 最大角速度
   double min_vel_theta;
   double acc_lim_x;
   double acc_lim_y;
   double acc_lim_theta;
   double acc_lim_trans;
-  bool   prune_plan;
-  double xy_goal_tolerance;
-  double yaw_goal_tolerance;
-  double trans_stopped_vel;
-  double theta_stopped_vel;
-  bool   restore_defaults;
+  bool   prune_plan; // 是否修剪掉已经走过的全局路径点
+  double xy_goal_tolerance; // 机器人在平面位置上与目标点的误差
+  double yaw_goal_tolerance;  // 机器人在朝向上的误差
+  double trans_stopped_vel; // 机器人在平移方向“停下”的速度阈值
+  double theta_stopped_vel; // 机器人在旋转方向“停下”的速度阈值
+  bool   restore_defaults;  // 是否恢复默认参数
 
   LocalPlannerLimits() {}
 
