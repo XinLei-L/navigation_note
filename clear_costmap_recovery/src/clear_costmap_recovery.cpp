@@ -42,7 +42,7 @@
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_EXPORT_CLASS(clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
 
-using costmap_2d::NO_INFORMATION;
+using costmap_2d::NO_INFORMATION; // 未知区域
 
 namespace clear_costmap_recovery {
 ClearCostmapRecovery::ClearCostmapRecovery(): global_costmap_(NULL), local_costmap_(NULL),
@@ -56,7 +56,6 @@ void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     global_costmap_ = global_costmap;
     local_costmap_ = local_costmap;
 
-    //get some parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
@@ -97,7 +96,7 @@ void ClearCostmapRecovery::runBehavior(){
     return;
   }
 
-  if (!invert_area_to_clear_){
+  if (!invert_area_to_clear_){ // 清理内部区域
     ROS_WARN("Clearing %s costmap%s outside a square (%.2fm) large centered on the robot.", affected_maps_.c_str(),
            affected_maps_ == "both" ? "s" : "", reset_distance_);
   }else {
@@ -106,29 +105,32 @@ void ClearCostmapRecovery::runBehavior(){
   }
 
   ros::WallTime t0 = ros::WallTime::now();
+  // 清理全局代价地图
   if (affected_maps_ == "global" || affected_maps_ == "both")
   {
     clear(global_costmap_);
 
     if (force_updating_)
-      global_costmap_->updateMap();
+      global_costmap_->updateMap(); // 立即刷新全局地图
 
     ROS_DEBUG("Global costmap cleared in %fs", (ros::WallTime::now() - t0).toSec());
   }
 
   t0 = ros::WallTime::now();
+  // 清理局部代价地图
   if (affected_maps_ == "local" || affected_maps_ == "both")
   {
     clear(local_costmap_);
 
     if (force_updating_)
-      local_costmap_->updateMap();
+      local_costmap_->updateMap(); // 立即刷新局部代价地图
 
     ROS_DEBUG("Local costmap cleared in %fs", (ros::WallTime::now() - t0).toSec());
   }
 }
 
 void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
+  // 获取该costmap的所有层
   std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = costmap->getLayeredCostmap()->getPlugins();
 
   geometry_msgs::PoseStamped pose;
@@ -143,15 +145,16 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
   for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
     boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
+    // 去掉namespace前缀
     std::string name = plugin->getName();
     int slash = name.rfind('/');
     if( slash != std::string::npos ){
         name = name.substr(slash+1);
     }
 
-    if(clearable_layers_.count(name)!=0){
+    if(clearable_layers_.count(name)!=0){ // 判断该层是否在可清理层集合中
 
-      // check if the value is convertable
+      // 判断该层是否是CostmapLayer
       if(!dynamic_cast<costmap_2d::CostmapLayer*>(plugin.get())){
         ROS_ERROR_STREAM("Layer " << name << " is not derived from costmap_2d::CostmapLayer");
         continue;
@@ -168,20 +171,22 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> costmap,
                                         double pose_x, double pose_y){
   boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(costmap->getMutex()));
-
+  // 计算以机器人为中心的清理矩形区域,start_point(左下角)、end_point(右上角)
   double start_point_x = pose_x - reset_distance_ / 2;
   double start_point_y = pose_y - reset_distance_ / 2;
   double end_point_x = start_point_x + reset_distance_;
   double end_point_y = start_point_y + reset_distance_;
 
   int start_x, start_y, end_x, end_y;
+  // 将世界坐标转化为地图索引坐标
   costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
   costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
-
+  // 清除区域
   costmap->clearArea(start_x, start_y, end_x, end_y, invert_area_to_clear_);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
+  // 更新边界，保证代价地图线程能刷新变化
   costmap->addExtraBounds(ox, oy, ox + width, oy + height);
   return;
 }

@@ -49,40 +49,40 @@ namespace clear_costmap_recovery{
   class ClearCostmapRecovery : public nav_core::RecoveryBehavior {
     public:
       /**
-       * @brief  Constructor, make sure to call initialize in addition to actually initialize the object
-       * @param
-       * @return
+       * @brief  对象构造后还需要调用 initialize() 来完成初始化
        */
       ClearCostmapRecovery();
 
       /**
-       * @brief  Initialization function for the ClearCostmapRecovery recovery behavior
-       * @param tf A pointer to a transform listener
-       * @param global_costmap A pointer to the global_costmap used by the navigation stack
-       * @param local_costmap A pointer to the local_costmap used by the navigation stack
+       * @brief  初始化函数
+       * @param tf tf变换指针
+       * @param global_costmap 全局代价地图指针
+       * @param local_costmap 局部代价地图指针
        */
       void initialize(std::string name, tf2_ros::Buffer* tf,
           costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap);
 
       /**
-       * @brief  Run the ClearCostmapRecovery recovery behavior. Reverts the
+       * @brief  执行地图恢复行为：主要是清除代价地图，包括全局和局部. Reverts the
        * costmap to the static map outside of a user-specified window and
        * clears unknown space around the robot.
        */
       void runBehavior();
 
     private:
+      // 对某个costmap调用层级清除
       void clear(costmap_2d::Costmap2DROS* costmap);
+      // 真正执行在一定区域内清除
       void clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> costmap, double pose_x, double pose_y);
-      costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
-      std::string name_;
-      tf2_ros::Buffer* tf_;
-      bool initialized_;
-      bool force_updating_; ///< force costmap update after clearing, so we don't need to wait for update thread
-      double reset_distance_;
-      bool invert_area_to_clear_;
-      std::string affected_maps_; ///< clear only local, global or both costmaps
-      std::set<std::string> clearable_layers_; ///< Layer names which will be cleared.
+      costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_; // 全局地图、局部地图指针
+      std::string name_;  // 恢复行为名字
+      tf2_ros::Buffer* tf_; // TF 变换缓存
+      bool initialized_;  // 是否完成初始化
+      bool force_updating_; // 清理后是否强制立即更新，默认值为false
+      double reset_distance_; // 清理的区域边长（以机器人为中心的正方形），默认值为3.0
+      bool invert_area_to_clear_; // 清除区域（清理内区域还是外区域），默认值为false，清理内区域
+      std::string affected_maps_; // 哪个代价地图需要清理 ("local"、"global"、"both")，默认值为both
+      std::set<std::string> clearable_layers_; // 可被清理的层，默认只清除obstacle层
   };
 };
 #endif

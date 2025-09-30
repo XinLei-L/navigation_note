@@ -46,7 +46,7 @@
 #include <string>
 
 
-// register this planner as a RecoveryBehavior plugin
+// 将恢复动作行为注册为插件，可以被navigation动态加载
 PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
 namespace rotate_recovery
@@ -62,14 +62,14 @@ void RotateRecovery::initialize(std::string name, tf2_ros::Buffer*,
   {
     local_costmap_ = local_costmap;
 
-    // get some parameters from the parameter server
-    ros::NodeHandle private_nh("~/" + name);
-    ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
+    ros::NodeHandle private_nh("~/" + name);  // 插件专属命名空间参数
+    ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");  // DWA / TrajectoryPlanner 的命名空间，用于加载运动学参数
 
-    // we'll simulate every degree by default
-    private_nh.param("sim_granularity", sim_granularity_, 0.017);
+    // 从参数服务器加载仿真角度分辨率和执行频率(私有句柄加载)
+    private_nh.param("sim_granularity", sim_granularity_, 0.017); 
     private_nh.param("frequency", frequency_, 20.0);
 
+    // 加载旋转相关参数
     acc_lim_th_ = nav_core::loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
     max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
     min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
@@ -110,27 +110,29 @@ void RotateRecovery::runBehavior()
   ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
   geometry_msgs::PoseStamped global_pose;
-  local_costmap_->getRobotPose(global_pose);
+  local_costmap_->getRobotPose(global_pose);  // 获取机器人当前位姿
 
-  double current_angle = tf2::getYaw(global_pose.pose.orientation);
-  double start_angle = current_angle;
+  double current_angle = tf2::getYaw(global_pose.pose.orientation); 
+  double start_angle = current_angle;  // 起点角度
 
-  bool got_180 = false;
+  bool got_180 = false;  // 是否已经旋转过180°
 
   while (n.ok() &&
-         (!got_180 ||
+         (!got_180 ||  // 没有旋转180°
           std::fabs(angles::shortest_angular_distance(current_angle, start_angle)) > tolerance_))
   {
-    // Update Current Angle
+    // 更新机器人朝向角yaw
     local_costmap_->getRobotPose(global_pose);
-    current_angle = tf2::getYaw(global_pose.pose.orientation);
+    current_angle = tf2::getYaw(global_pose.pose.orientation); // 当前yaw角
 
-    // compute the distance left to rotate
+    // 计算剩余旋转角度
     double dist_left;
-    if (!got_180)
+    if (!got_180)  // 转到180°
     {
-      // If we haven't hit 180 yet, we need to rotate a half circle plus the distance to the 180 point
+      // 先强制让机器人至少旋转半圈(起点朝向 + 180°)
+      // distance_to_180表示还差多少角度到180°
       double distance_to_180 = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + M_PI));
+      // 再继续旋转直到回到起点
       dist_left = M_PI + distance_to_180;
 
       if (distance_to_180 < tolerance_)
@@ -138,36 +140,35 @@ void RotateRecovery::runBehavior()
         got_180 = true;
       }
     }
-    else
+    else  // 回到起点角度
     {
-      // If we have hit the 180, we just have the distance back to the start
+      // 此时已经旋转半圈，计算当前角度与起点角度的差值
       dist_left = std::fabs(angles::shortest_angular_distance(current_angle, start_angle));
     }
 
     double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
-    // check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
     while (sim_angle < dist_left)
     {
       double theta = current_angle + sim_angle;
 
-      // make sure that the point is legal, if it isn't... we'll abort
+      // 每隔sim_granularity_ 检查一次 footprint 是否会碰撞
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
       if (footprint_cost < 0.0)
       {
         ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f",
                   footprint_cost);
-        return;
+        return;  // 发生碰撞，直接退出
       }
 
       sim_angle += sim_granularity_;
     }
 
-    // compute the velocity that will let us stop by the time we reach the goal
+    // 计算旋转速度，确保能在剩余角度内停下
     double vel = sqrt(2 * acc_lim_th_ * dist_left);
 
-    // make sure that this velocity falls within the specified limits
+    // 限制在最小、最大旋转速度范围内
     vel = std::min(std::max(vel, min_rotational_vel_), max_rotational_vel_);
 
     geometry_msgs::Twist cmd_vel;

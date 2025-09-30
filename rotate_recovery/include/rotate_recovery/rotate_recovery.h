@@ -42,32 +42,39 @@
 #include <base_local_planner/costmap_model.h>
 #include <string>
 
+/**
+ * 旋转恢复整体思路：
+ * 1. 让机器人原地旋转一整圈
+ * 2. 这样它的传感器(激光雷达、深度相机等)可以扫描周围环境，刷新局部costmap
+ * 3. 如果之前costmap上残留了错误的障碍物(比如动态障碍物已经走开)，这个旋转动作会帮助清理
+ */
+
 namespace rotate_recovery
 {
 /**
  * @class RotateRecovery
- * @brief A recovery behavior that rotates the robot in-place to attempt to clear out space
+ * @brief 让机器人原地旋转，尝试清理出可行空间的恢复行为
  */
 class RotateRecovery : public nav_core::RecoveryBehavior
 {
 public:
   /**
-   * @brief  Constructor, make sure to call initialize in addition to actually initialize the object
+   * @brief  构造函数，不会完成实际配置，需要后面 initialize()
    */
   RotateRecovery();
 
   /**
-   * @brief  Initialization function for the RotateRecovery recovery behavior
-   * @param name Namespace used in initialization
-   * @param tf (unused)
-   * @param global_costmap (unused)
-   * @param local_costmap A pointer to the local_costmap used by the navigation stack
+   * @brief  旋转恢复行为初始化函数
+   * @param name 命名空间，用于加载参数
+   * @param tf tf变化(unused)
+   * @param global_costmap 全局costmap(unused)
+   * @param local_costmap 局部地图costmap，用来检测碰撞和获取机器人位姿
    */
   void initialize(std::string name, tf2_ros::Buffer*,
                   costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS* local_costmap);
 
   /**
-   * @brief  Run the RotateRecovery recovery behavior.
+   * @brief  执行恢复动作：机器人原地旋转
    */
   void runBehavior();
 
@@ -77,10 +84,15 @@ public:
   ~RotateRecovery();
 
 private:
-  costmap_2d::Costmap2DROS* local_costmap_;
-  bool initialized_;
-  double sim_granularity_, min_rotational_vel_, max_rotational_vel_, acc_lim_th_, tolerance_, frequency_;
-  base_local_planner::CostmapModel* world_model_;
+  costmap_2d::Costmap2DROS* local_costmap_; // 局部代价地图指针
+  bool initialized_;  // 标志位，防止多次初始化
+  double sim_granularity_; // 仿真角度分辨率，默认值为0.017
+  double min_rotational_vel_; // 最小旋转速度，默认值为0.4
+  double max_rotational_vel_;  // 最大旋转速度，默认值为1.0
+  double acc_lim_th_;  // 角加速度限制，默认值为3.2
+  double tolerance_;  // 角度容忍误差，默认值为0.10
+  double frequency_;  // 执行频率，默认值为20.0
+  base_local_planner::CostmapModel* world_model_;  //代价地图模型，用于检测footprint是否会发生碰撞
 };
 };  // namespace rotate_recovery
 #endif  // ROTATE_RECOVERY_ROTATE_RECOVERY_H
